@@ -34,7 +34,6 @@ import subprocess
 for bashCommand in bash_commands:
     process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
     output, error = process.communicate()
-]
 ```
 
 ### Shared notebooks:
