@@ -14,8 +14,8 @@ for bashCommand in bash_commands:
     process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
     output, error = process.communicate()
 
-
 from utils import seed_everything, RSNADatasetStage1, get_train_transforms, get_valid_transforms, RSNAImgClassifier, valid_one_epoch, prepare_train_dataloader
+
 import torch
 import catalyst
 import time
@@ -25,23 +25,13 @@ import json
 
 SEED = 42321
 
-def rsna_wloss_inference(y_true_img, y_pred_img):
-    bce_func = torch.nn.BCELoss(reduction='sum')
-    image_loss = bce_func(y_pred_img, y_true_img)
-    correct_count = ((y_pred_img>0) == y_true_img).sum()
-    counts = y_pred_img.shape[0]
-    return image_loss, correct_count, counts
-
-def rsna_wloss_train(y_true_img, y_pred_img, device):
+def rsna_wloss(y_true_img, y_pred_img, device):
     bce_func = torch.nn.BCEWithLogitsLoss(reduction='sum').to(device)
     y_pred_img = y_pred_img.view(*y_true_img.shape)
     image_loss = bce_func(y_pred_img, y_true_img)
     correct_count = ((y_pred_img>0) == y_true_img).sum(axis=0)
     counts = y_true_img.size()[0]
     return image_loss, correct_count, counts
-
-def rsna_wloss_valid(y_true_img, y_pred_img, device):
-    return rsna_wloss_train(y_true_img, y_pred_img, device)
 
 def train_one_epoch(epoch, model, device, scaler, optimizer, train_loader):
     model.train()
@@ -61,7 +51,7 @@ def train_one_epoch(epoch, model, device, scaler, optimizer, train_loader):
         with autocast():
             image_preds = model(imgs)   #output = model(input)
 
-            image_loss, correct_count, counts = rsna_wloss_train(image_labels, image_preds, device)
+            image_loss, correct_count, counts = rsna_wloss(image_labels, image_preds, device)
             
             loss = image_loss/counts
             scaler.scale(loss).backward()
@@ -135,7 +125,9 @@ if __name__ == '__main__':
             torch.save(model.state_dict(),'{}/model_fold_{}_{}'.format(CFG['model_path'], fold, CFG['tag']))
             del model, optimizer, train_loader, val_loader, scaler, scheduler
             torch.cuda.empty_cache()
-            
+
+        # Train on all data after val
+        '''
         train_loader, val_loader = prepare_train_dataloader(train_df, cv_df, np.arange(0, 20), np.array([]))
         device = torch.device(CFG['device'])
         model = RSNAImgClassifier().to(device)
@@ -147,6 +139,6 @@ if __name__ == '__main__':
             train_one_epoch(epoch, model, device, scaler, optimizer, train_loader)
 
         torch.save(model.state_dict(),'{}/model_{}'.format(CFG['model_path'], CFG['tag']))
-
+        '''
     else:
         assert False

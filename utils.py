@@ -30,15 +30,16 @@ def window(img, WL=50, WW=350):
     return X
 
 def get_img(path, transforms, opencv=False):
-    
-    d = pydicom.read_file(path)
-
     '''
+    Retrive RGB image from dicom files
     RED channel / LUNG window / level=-600, width=1500
     GREEN channel / PE window / level=100, width=700
     BLUE channel / MEDIASTINAL window / level=40, width=400
+    Input:
+    path - str; image path
+    transforms - albu.Compose; containing desired transformations
     '''
-    
+    d = pydicom.read_file(path)
     img = (d.pixel_array * d.RescaleSlope) + d.RescaleIntercept
     
     r = window(img, -600, 1500)
@@ -72,7 +73,7 @@ def get_valid_transforms():
 
 def get_stage1_columns():
     new_feats = []
-    for cfg in STAGE1_CFGS: # CHECK THIS OUT, DOES IT WORK
+    for cfg in STAGE1_CFGS:
         for i in range(cfg['output_len']):
             f = cfg['tag']+'_'+str(i)
             new_feats += [f]
@@ -80,6 +81,9 @@ def get_stage1_columns():
     return new_feats
 
 def valid_one_epoch(epoch, model, device, scheduler, val_loader, schd_loss_update=False):
+    '''
+    Validation for stage 1 models (untested)
+    '''
     model.eval()
 
     t = time.time()
@@ -117,6 +121,9 @@ def valid_one_epoch(epoch, model, device, scheduler, val_loader, schd_loss_updat
 class RSNADatasetStage1(Dataset):
     '''
     Stage 1 dataset
+    Input:
+    opencv - If openCV based augmentations are used (pixel values must be betseen 0, 255)
+    image_label - If False, return 9 exam-level labels, otherwise return single image level label
     '''
     def __init__(
         self, df, label_smoothing, data_root, 

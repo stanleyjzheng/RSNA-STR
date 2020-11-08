@@ -46,24 +46,13 @@ def update_image_metas(df, data_root):
     print("Update meta complete: {:.4f} secs".format(time.time()-t))
     return df
 
-def rsna_wloss_inference(y_true_img, y_pred_img):
-    bce_func = torch.nn.BCELoss(reduction='sum')
-    image_loss = bce_func(y_pred_img, y_true_img)
-    correct_count = ((y_pred_img>0) == y_true_img).sum()
-    counts = y_pred_img.shape[0]
-    return image_loss, correct_count, counts
-
-def rsna_wloss_train(y_true_img, y_pred_img, device):
+def rsna_wloss(y_true_img, y_pred_img, device):
     bce_func = torch.nn.BCEWithLogitsLoss(reduction='sum').to(device)
     y_pred_img = y_pred_img.flatten()
     image_loss = bce_func(y_pred_img, y_true_img)
     correct_count = ((y_pred_img>0) == (y_true_img>0.5)).sum(axis=0)
     counts = y_true_img.size()[0]
-    
     return image_loss, correct_count, counts
-
-def rsna_wloss_valid(y_true_img, y_pred_img, device):
-    return rsna_wloss_train(y_true_img, y_pred_img, device)
 
 def train_one_epoch(epoch, model, device, scaler, optimizer, train_loader):
     model.train()
@@ -79,7 +68,7 @@ def train_one_epoch(epoch, model, device, scaler, optimizer, train_loader):
 
         with autocast():
             image_preds = model(imgs)
-            image_loss, correct_count, counts = rsna_wloss_train(image_labels, image_preds, device)
+            image_loss, correct_count, counts = rsna_wloss(image_labels, image_preds, device)
             
             loss = image_loss/counts
             scaler.scale(loss).backward()
