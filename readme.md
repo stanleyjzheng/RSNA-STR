@@ -1,21 +1,19 @@
 # RSNA-STR Code
 
 Done so far:
-- Stage 1 multilabel script
+- Stage 1 multilabel training script
+- Stage 1 image level training script
 
 Todo:
-- Stage 1 image level script
 - Stage 2 GRU training
 - Inference
-- Add the ability to change models
+- Add the ability to change models (from b0 to bx and add ResNeSt)
 - Postprocessing/label consistency
 - Docstrings
-- Clarify dataset names
 
-Currently very experimental and unstable code. I will do my best to make this code more stable and usable, as I believe this format is much easier to work with than repetitive notebooks in the long term. For now, I am still experimenting with JSON config and splitting everything into scripts.
+Any files in the `Kaggle` directory are verified to work on Kaggle.
+Shared scripts and instructions to run are inside of the readme in the directory.
 
-Any files in the `Kaggle` directory are verified to work on Kaggle and notebooks and instructions to run are shared.
-
-JSON must be called config.json and in current directory. (change  to input?)
+JSON must be called config.json and in current directory.
 
 Stratified Validation Strategy from [Kun's Notebook](https://www.kaggle.com/khyeh0719/stratified-validation-strategy).

@@ -38,4 +38,5 @@ for bashCommand in bash_commands:
 ```
 
 ### Shared notebooks:
-- https://www.kaggle.com/stanleyjzheng/rsna-github-testing?scriptVersionId=46461150
+- [Stage 1 multilabel](https://www.kaggle.com/stanleyjzheng/rsna-github-multilabel-testing?scriptVersionId=46463393)
+- [Stage 1 image level](https://www.kaggle.com/stanleyjzheng/rsna-github-image-level-testing?scriptVersionId=46465661)

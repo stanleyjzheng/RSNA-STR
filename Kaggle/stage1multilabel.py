@@ -8,18 +8,20 @@ bash_commands = [
             'conda install --offline ./gdcm/gdcm-2.8.9-py37h71b2a6d_0.tar.bz2',
             'cp ../input/rsna-str-github/config.json .',
             ]
+
 import subprocess
 for bashCommand in bash_commands:
     process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
     output, error = process.communicate()
 
+
+from utils import seed_everything, RSNADatasetStage1, get_train_transforms, get_valid_transforms, RSNAImgClassifier, valid_one_epoch, prepare_train_dataloader
 import torch
 import catalyst
 import time
 import pandas as pd 
 import numpy as np 
 import json
-from utils import seed_everything, RSNADatasetStage1, get_train_transforms, get_valid_transforms, RSNAImgClassifier
 
 SEED = 42321
 
@@ -40,37 +42,6 @@ def rsna_wloss_train(y_true_img, y_pred_img, device):
 
 def rsna_wloss_valid(y_true_img, y_pred_img, device):
     return rsna_wloss_train(y_true_img, y_pred_img, device)
-
-def prepare_train_dataloader(train, cv_df, train_fold, valid_fold):
-    from catalyst.data.sampler import BalanceClassSampler
-    
-    train_patients = cv_df.loc[cv_df.fold.isin(train_fold), 'StudyInstanceUID'].unique()
-    valid_patients = cv_df.loc[cv_df.fold.isin(valid_fold), 'StudyInstanceUID'].unique()
-
-    train_ = train.loc[train.StudyInstanceUID.isin(train_patients),:].reset_index(drop=True)
-    valid_ = train.loc[train.StudyInstanceUID.isin(valid_patients),:].reset_index(drop=True)
-
-    # train mode to do image-level subsampling
-    train_ds = RSNADatasetStage1(train_, 0.0, CFG['train_img_path'],  image_subsampling=False, transforms=get_train_transforms(), output_label=True, opencv=True) 
-    valid_ds = RSNADatasetStage1(valid_, 0.0, CFG['train_img_path'],  image_subsampling=False, transforms=get_valid_transforms(), output_label=True)
-
-    train_loader = torch.utils.data.DataLoader(
-        train_ds,
-        batch_size=CFG['train_bs'],
-        pin_memory=False,
-        drop_last=False,
-        shuffle=True,        
-        num_workers=CFG['num_workers'],
-    )
-    val_loader = torch.utils.data.DataLoader(
-        valid_ds, 
-        batch_size=CFG['valid_bs'],
-        num_workers=CFG['num_workers'],
-        shuffle=False,
-        pin_memory=False,
-    )
-
-    return train_loader, val_loader
 
 def train_one_epoch(epoch, model, device, scaler, optimizer, train_loader):
     model.train()
@@ -97,7 +68,7 @@ def train_one_epoch(epoch, model, device, scaler, optimizer, train_loader):
 
             loss_ = image_loss.detach().item()/counts
             acc_ = correct_count.detach().cpu().numpy()/counts
-
+            
             loss_record += [loss_]
             acc_record += [acc_]
             loss_record = loss_record[-avg_cnt:]
@@ -123,51 +94,9 @@ def train_one_epoch(epoch, model, device, scaler, optimizer, train_loader):
                     f'time: {(time.time() - t):.2f}', end='\r' if (step + 1) != len(train_loader) else '\n'
                 )
 
-def valid_one_epoch(epoch, model, device, scheduler, val_loader, schd_loss_update=False):
-    model.eval()
-
-    t = time.time()
-    loss_sum = 0
-    acc_sum = None
-    loss_w_sum = 0
-
-    for step, (imgs, image_labels) in enumerate(val_loader):
-        imgs = imgs.to(device).float()
-        image_labels = image_labels.to(device).float()
-        
-        image_preds = model(imgs)
-
-        image_loss, correct_count, counts = rsna_wloss_valid(image_labels, image_preds, device)
-
-        loss = image_loss/counts
-        
-        loss_sum += image_loss.detach().item()
-        if acc_sum is None:
-            acc_sum = correct_count.detach().cpu().numpy()
-        else:
-            acc_sum += correct_count.detach().cpu().numpy()
-        loss_w_sum += counts     
-
-        acc_details = ["{:.5}: {:.4f}".format(f, acc_sum[i]/loss_w_sum) for i, f in enumerate(CFG['image_target_cols'])]
-        acc_details = ", ".join(acc_details)
-            
-        if ((step + 1) % CFG['verbose_step'] == 0) or ((step + 1) == len(val_loader)):
-            print(
-                f'epoch {epoch} valid Step {step+1}/{len(val_loader)}, ' + \
-                f'loss: {loss_sum/loss_w_sum:.3f}, ' + \
-                acc_details + ', ' + \
-                f'time: {(time.time() - t):.2f}', end='\r' if (step + 1) != len(val_loader) else '\n'
-            )
-    
-    if schd_loss_update:
-        scheduler.step(loss_sum/loss_w_sum)
-    else:
-        scheduler.step()
-
 if __name__ == '__main__':
     with open('config.json') as json_file: 
         CFG = json.load(json_file) 
-    
     if CFG['train']:
         from torch.cuda.amp import autocast, GradScaler # for training only, need nightly build pytorch
 

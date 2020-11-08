@@ -32,9 +32,6 @@ def window(img, WL=50, WW=350):
 def get_img(path, transforms, opencv=False):
     
     d = pydicom.read_file(path)
-    '''
-    res = cv2.resize((d.pixel_array - d.RescaleIntercept) / (d.RescaleSlope * 1000), (CFG['img_size'], CFG['img_size'])), d.ImagePositionPatient[2]
-    '''
 
     '''
     RED channel / LUNG window / level=-600, width=1500
@@ -54,7 +51,6 @@ def get_img(path, transforms, opencv=False):
     
     if opencv:
         res = transforms(image=(res*255.0).astype('uint8'))['image']
-    #res = cv2.resize(res, (CFG['img_size'], CFG['img_size']))
         res = torch.div(res, 255.)
     else:
         res = transforms(image=res)['image']
@@ -83,13 +79,48 @@ def get_stage1_columns():
         
     return new_feats
 
+def valid_one_epoch(epoch, model, device, scheduler, val_loader, schd_loss_update=False):
+    model.eval()
+
+    t = time.time()
+    loss_sum = 0
+    acc_sum = 0
+    loss_w_sum = 0
+
+    for step, (imgs, image_labels) in enumerate(val_loader):
+        imgs = imgs.to(device).float()
+        image_labels = image_labels.to(device).float()
+        
+        image_preds = model(imgs)
+
+        image_loss, correct_count, counts = rsna_wloss_valid(image_labels, image_preds, device)
+
+        loss = image_loss/counts
+        
+        loss_sum += image_loss.detach().item()
+        acc_sum += correct_count.detach().item()
+        loss_w_sum += counts     
+
+        if ((step + 1) % CFG['verbose_step'] == 0) or ((step + 1) == len(val_loader)):
+            print(
+                f'epoch {epoch} valid Step {step+1}/{len(val_loader)}, ' + \
+                f'loss: {loss_sum/loss_w_sum:.4f}, ' + \
+                f'acc: {acc_sum/loss_w_sum:.4f}, ' + \
+                f'time: {(time.time() - t):.4f}', end='\r' if (step + 1) != len(val_loader) else '\n'
+            )
+    
+    if schd_loss_update:
+        scheduler.step(loss_sum/loss_w_sum)
+    else:
+        scheduler.step()
+
 class RSNADatasetStage1(Dataset):
     '''
-    Stage 1 dataset for multilabel (exam level)
+    Stage 1 dataset
     '''
     def __init__(
         self, df, label_smoothing, data_root, 
-        image_subsampling=True, transforms=None, output_label=True, opencv=False
+        image_subsampling=True, transforms=None, output_label=True, opencv=False, image_label=False
     ):
         
         super().__init__()
@@ -99,6 +130,7 @@ class RSNADatasetStage1(Dataset):
         self.data_root = data_root
         self.output_label = output_label
         self.opencv = opencv
+        self.image_label = image_label
     
     def __len__(self):
         return self.df.shape[0]
@@ -106,8 +138,11 @@ class RSNADatasetStage1(Dataset):
     def __getitem__(self, index: int):
         # get labels
         if self.output_label:
-            target = self.df[CFG['image_target_cols']].values[index]
-            target[1:-1] = target[0]*target[1:-1] # if PE == 1, keep the original label; otherwise clean to 0 (except indeterminate)
+            if self.image_label:
+                target = self.df.iloc[index][CFG['image_target_cols'][0]]
+            else:
+                target = self.df[CFG['image_target_cols']].values[index]
+                target[1:-1] = target[0]*target[1:-1] # if PE == 1, keep the original label; otherwise clean to 0 (except indeterminate)
             
         path = "{}/{}/{}/{}.dcm".format(self.data_root, 
                                         self.df.iloc[index]['StudyInstanceUID'], 
@@ -124,7 +159,8 @@ class RSNADatasetStage1(Dataset):
 
 class RSNADataset(Dataset):
     '''
-    Dataset for extracting from embeddings
+    Dataset containing extracted embeddings and corresponding labels.
+    Used in RNN training and inference
     '''
     def __init__(
         self, df, label_smoothing, data_root, 
@@ -225,6 +261,10 @@ class RSNADataset(Dataset):
             return imgs, per_image_preds, locs, img_num, index, seq_ix
 
 class RNSAImageFeatureExtractor(nn.Module):
+    '''
+    Loads convolutional layers of efficientnet to use as feature extractor for RNN
+    Used in inference
+    '''
     def __init__(self):
         super().__init__()
         self.cnn_model = EfficientNet.from_name(CFG['efbnet'])
@@ -238,6 +278,9 @@ class RNSAImageFeatureExtractor(nn.Module):
         return self.pooling(feats).view(x.shape[0], -1)   
 
 class RSNAImgClassifierSingle(nn.Module):
+    '''
+    Initializes Stage 1 image level model
+    '''
     def __init__(self):
         super().__init__()
         self.cnn_model = RNSAImageFeatureExtractor()
@@ -250,6 +293,9 @@ class RSNAImgClassifierSingle(nn.Module):
         return image_preds
 
 class RSNAImgClassifier(nn.Module):
+    '''
+    Initializes Stage 1 multilabel model
+    '''
     def __init__(self):
         super().__init__()
         self.cnn_model = RNSAImageFeatureExtractor()
@@ -260,3 +306,41 @@ class RSNAImgClassifier(nn.Module):
         image_preds = self.image_predictors(imgs_embdes)
         
         return image_preds
+
+def prepare_train_dataloader(train, cv_df, train_fold, valid_fold, image_label=False):
+    '''
+    Prepares Stage 1 dataset
+    Inputs:
+    train - dataframe; train data from train.csv
+    cv_df - dataframe; cross validation with folds
+    train_fold - list of int; list of trianing folds corresponding to cv_df
+    valid_fold - list of int; list of validiation folds corresponding to cv_df
+    '''
+    from catalyst.data.sampler import BalanceClassSampler
+    
+    train_patients = cv_df.loc[cv_df.fold.isin(train_fold), 'StudyInstanceUID'].unique()
+    valid_patients = cv_df.loc[cv_df.fold.isin(valid_fold), 'StudyInstanceUID'].unique()
+
+    train_ = train.loc[train.StudyInstanceUID.isin(train_patients),:].reset_index(drop=True)
+    valid_ = train.loc[train.StudyInstanceUID.isin(valid_patients),:].reset_index(drop=True)
+
+    # train mode to do image-level subsampling
+    train_ds = RSNADatasetStage1(train_, 0.0, CFG['train_img_path'],  image_subsampling=False, transforms=get_train_transforms(), output_label=True, image_label=image_label, opencv=True) 
+    valid_ds = RSNADatasetStage1(valid_, 0.0, CFG['train_img_path'],  image_subsampling=False, transforms=get_valid_transforms(), output_label=True, image_label=image_label)
+
+    train_loader = torch.utils.data.DataLoader(
+        train_ds,
+        batch_size=CFG['train_bs'],
+        pin_memory=False,
+        drop_last=False,
+        shuffle=True,        
+        num_workers=CFG['num_workers'],
+    )
+    val_loader = torch.utils.data.DataLoader(
+        valid_ds, 
+        batch_size=CFG['valid_bs'],
+        num_workers=CFG['num_workers'],
+        shuffle=False,
+        pin_memory=False,
+    )
+    return train_loader, val_loader
