@@ -267,6 +267,32 @@ class RSNADataset(Dataset):
         else:
             return imgs, per_image_preds, locs, img_num, index, seq_ix
 
+class RSNAClassifier(nn.Module):
+    '''
+    Inference version of model
+    '''
+    def __init__(self, hidden_size=64):
+        super().__init__()
+        
+        self.gru = nn.GRU(len(get_stage1_columns())+1, hidden_size, bidirectional=True, batch_first=True, num_layers=2)
+        
+        self.image_predictors = TimeDistributed(nn.Linear(hidden_size*2, 1))
+        self.exam_predictor = nn.Linear(hidden_size*2*2, 9)
+        
+    def forward(self, img_preds, locs):
+        
+        embeds = torch.cat([img_preds, locs.view(locs.shape[0], locs.shape[1], 1)], dim=2) # bs * ts * fs
+        
+        embeds, _ = self.gru(embeds)
+        image_preds = self.image_predictors(embeds)
+        
+        avg_pool = torch.mean(embeds, 1)
+        max_pool, _ = torch.max(embeds, 1)
+        conc = torch.cat([avg_pool, max_pool], 1)
+        
+        exam_pred = self.exam_predictor(conc)
+        return image_preds, exam_pred
+
 class RNSAImageFeatureExtractor(nn.Module):
     '''
     Loads convolutional layers of efficientnet to use as feature extractor for RNN

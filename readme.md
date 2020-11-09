@@ -14,10 +14,13 @@ All static or commonly used code is in `utils.py`, including all datasets, dicom
 Done so far:
 - Stage 1 multilabel training script
 - Stage 1 image level training script
+- TTA and non-TTA inference scripts (untested, please make sure 'train': False in config)
+- - TTAx3 inference runs in 8.5hrs with EfficientnetB0
+- - Non-TTA inference runs in 2.5 hrs with EfficientnetB0
 
 Todo:
+- Fix the postprocessing function in inference
 - Stage 2 GRU training script
-- Inference script
 - Postprocessing/label consistency check
 - Docstrings
 
