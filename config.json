@@ -1,0 +1,33 @@
+{
+    "train": true,
+    "train_img_path": "../input/rsna-str-pulmonary-embolism-detection/train",
+    "test_img_path": "../input/rsna-str-pulmonary-embolism-detection/test",
+    "cv_fold_path": "../input/rsna-str-github/rsna_train_splits_fold_20.csv",
+    "train_path": "../input/rsna-str-pulmonary-embolism-detection/train.csv",
+    "test_path": "../input/rsna-str-pulmonary-embolism-detection/test.csv",
+    "image_target_cols": [
+        "pe_present_on_image",
+        "rv_lv_ratio_gte_1",
+        "rv_lv_ratio_lt_1",
+        "leftsided_pe",
+        "chronic_pe",
+        "rightsided_pe",
+        "acute_and_chronic_pe",
+        "central_pe",
+        "indeterminate"
+    ],
+    "img_size": 256,
+    "lr": 0.0005,
+    "epochs": 1,
+    "device": "cuda",
+    "train_bs": 64,
+    "valid_bs": 256,
+    "accum_iter": 1,
+    "verbose_step": 1,
+    "num_workers": 4,
+    "efbnet": "efficientnet-b0",
+    "train_folds": [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]],
+    "valid_folds": [[16, 17, 18, 19, 20]],
+    "model_path": "../input/kh-rsna-model",
+    "tag": "efb0_stage1_multilabel"
+}

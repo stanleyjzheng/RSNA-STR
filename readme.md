@@ -18,7 +18,6 @@ Done so far:
 Todo:
 - Stage 2 GRU training script
 - Inference script
-- Add the ability to change models (from b0 to bx and add ResNeSt)
 - Postprocessing/label consistency check
 - Docstrings
 
@@ -41,7 +40,7 @@ Parameters:
 - accum_iter: Accumulative iteration (set to same as epochs)
 - verbose_step: Number of steps between printing metrics
 - num_workers: Number of threads to run concurrent processes with
-- efbnet: Which efficientnet architecture to use
+- efbnet: Which efficientnet architecture to use. For example, 'efbnet': 'efficientnet-b7'
 - train_folds: Nested list with folds to train with. Dimension 0 is the number of folds to run.
 
 Stratified Validation Strategy from [Kun's Notebook](https://www.kaggle.com/khyeh0719/stratified-validation-strategy).
