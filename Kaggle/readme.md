@@ -1,5 +1,7 @@
 ## A few verified working scripts to be used in Kaggle.
 
+For ease of use, these scripts create their own `config.json` so that a new config does not need to be uploaded for each run.
+
 ### Datasets to add:
 - [EfficientNet Pytorch 0.7](https://www.kaggle.com/tunguz/efficientnet-pytorch-07)
 - [gdcm conda install](https://www.kaggle.com/ronaldokun/gdcm-conda-install)

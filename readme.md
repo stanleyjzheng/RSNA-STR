@@ -25,6 +25,23 @@ Todo:
 Any files in the `Kaggle` directory are verified to work on Kaggle.
 Shared scripts and instructions to run are inside of the readme in the directory.
 
-JSON must be called config.json and in current directory.
+### About `config.json`
+JSON must be called config.json and in the same directory as `utils.py` and the training script.
+
+Parameters:
+- train: Set to true if training, false if doing inference
+- train_img_path: Path to directory containing train images. On Kaggle, defaults to `../input/rsna-str-pulmonary-embolism-detection/train`
+- test_img_path: Path to directory containing test images. On Kaggle, defaults to `../input/rsna-str-pulmonary-embolism-detection/test`
+- cv_fold_path: Path to CSV containing study folds. Can be downloaded [here](https://www.kaggle.com/khyeh0719/stratified-validation-strategy)
+- train_path: Path to `train.csv`
+- test_path: Path to `test.csv`
+- image_target_cols: List of target columns including image level
+- img_size: Image dimension (square)
+- lr: Learning rate
+- accum_iter: Accumulative iteration (set to same as epochs)
+- verbose_step: Number of steps between printing metrics
+- num_workers: Number of threads to run concurrent processes with
+- efbnet: Which efficientnet architecture to use
+- train_folds: Nested list with folds to train with. Dimension 0 is the number of folds to run.
 
 Stratified Validation Strategy from [Kun's Notebook](https://www.kaggle.com/khyeh0719/stratified-validation-strategy).

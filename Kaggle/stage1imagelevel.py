@@ -1,12 +1,12 @@
 package_path = '../input/efficientnet-pytorch-07/efficientnet_pytorch-0.7.0'
-utils_path = '../input/rsna-str-github/'
-import sys; sys.path.append(package_path); sys.path.append(utils_path)
+import sys; sys.path.append(package_path)
 
 bash_commands = [
             'cp ../input/gdcm-conda-install/gdcm.tar .',
             'tar -xvzf gdcm.tar',
             'conda install --offline ./gdcm/gdcm-2.8.9-py37h71b2a6d_0.tar.bz2',
-            'cp ../input/rsna-str-github/config.json .',
+            #'cp ../input/rsna-str-github/config.json .',
+            'cp ../input/rsna-str-github/utils.py .'
             ]
 
 import subprocess
@@ -14,13 +14,52 @@ for bashCommand in bash_commands:
     process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
     output, error = process.communicate()
 
+CFG = {
+    'train': True,
+    'train_img_path': '../input/rsna-str-pulmonary-embolism-detection/train',
+    'test_img_path': '../input/rsna-str-pulmonary-embolism-detection/test',
+    'cv_fold_path': '../input/rsna-str-github/rsna_train_splits_fold_20.csv',
+    'train_path': '../input/rsna-str-pulmonary-embolism-detection/train.csv',
+    'test_path': '../input/rsna-str-pulmonary-embolism-detection/test.csv',
+    'image_target_cols': [
+        'pe_present_on_image', # only image level
+        'rv_lv_ratio_gte_1', # exam level
+        'rv_lv_ratio_lt_1', # exam level
+        'leftsided_pe', # exam level
+        'chronic_pe', # exam level
+        'rightsided_pe', # exam level
+        'acute_and_chronic_pe', # exam level
+        'central_pe', # exam level
+        'indeterminate' # exam level
+    ],
+    'img_size': 256,
+    'lr': 0.0005,
+    'epochs': 1,
+    'device': 'cuda', # cuda, cpu
+    'train_bs': 64,
+    'valid_bs': 256,
+    'accum_iter': 1,
+    'verbose_step': 1,
+    'num_workers': 4,
+    'efbnet': 'efficientnet-b0',
+    
+    'train_folds': [list(range(0, 16))],
+    
+    'valid_folds': [list(range(16, 21))],
+    
+    'model_path': '../input/kh-rsna-model',
+    'tag': 'efb0_stage1_multilabel',
+}
+import json
+with open('config.json', 'w+') as outfile:
+    json.dump(CFG, outfile, indent=4)
+
 from utils import seed_everything, RSNADatasetStage1, get_train_transforms, get_valid_transforms, RSNAImgClassifier, valid_one_epoch, prepare_train_dataloader, RSNAImgClassifierSingle
 import torch
 import catalyst
 import time
 import pandas as pd 
 import numpy as np 
-import json
 
 SEED = 42321
 
