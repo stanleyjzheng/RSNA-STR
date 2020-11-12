@@ -10,18 +10,24 @@ All static or commonly used code is in `utils.py`, including all datasets, dicom
 
 `stage1examlevel.py` contains the training loop for exam level targets, based on [Kun's corresponding notebook called "CNN- Stage1 Train"](https://www.kaggle.com/khyeh0719/cnn-stage1-train)
 
+`stage2GRU.py` contains the training loop for the GRU stacking CNN embeddings, based on [Kun's corresponding notebook called "CNN-GRU Baseline- Stage2 Train+Inference"](https://www.kaggle.com/khyeh0719/cnn-gru-baseline-stage2-train-inference)
+
 ### Progress
+Unfortunately, the inference script is broken at the moment.
+I will fix it when I have time, my apologies.
+
 Done so far:
 - Stage 1 multilabel training script
 - Stage 1 image level training script
+- Stage 2 GRU training script
 - TTA and non-TTA inference scripts (untested, please make sure 'train': False in config)
 - - TTAx3 inference runs in 8.5hrs with EfficientnetB0
 - - Non-TTA inference runs in 2.5 hrs with EfficientnetB0
 
 Todo:
-- Fix the postprocessing function in inference
-- Stage 2 GRU training script
-- Postprocessing/label consistency check
+- Fix inference
+- Test all scripts on Kaggle and update the `Kaggle` folder
+- Postprocessing/label consistency check in inference
 - Docstrings
 
 Any files in the `Kaggle` directory are verified to work on Kaggle.
@@ -45,5 +51,3 @@ Parameters:
 - num_workers: Number of threads to run concurrent processes with
 - efbnet: Which efficientnet architecture to use. For example, 'efbnet': 'efficientnet-b7'
 - train_folds: Nested list with folds to train with. Dimension 0 is the number of folds to run.
-
-Stratified Validation Strategy from [Kun's Notebook](https://www.kaggle.com/khyeh0719/stratified-validation-strategy).

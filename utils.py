@@ -8,10 +8,30 @@ import pandas as pd
 import pydicom
 from efficientnet_pytorch import EfficientNet
 from torch.utils.data import Dataset,DataLoader
+from albumentations.pytorch import ToTensorV2
 import json
+import time
 
 with open('config.json') as json_file: 
     CFG = json.load(json_file) 
+
+def get_train_transforms():
+    return albu.Compose([
+        albu.Resize(256, 256, p=1.0),
+        albu.VerticalFlip(p=0.5),
+        albu.RandomRotate90(p=0.5),
+        albu.CLAHE(p=0.3),
+        albu.RandomBrightnessContrast(p=0.3),
+        albu.HueSaturationValue(p=0.3),
+        albu.Cutout(p=0.3),
+        ToTensorV2(p=1.0),
+        ], p=1.0)
+
+def get_valid_transforms():
+    return albu.Compose([
+        albu.Resize(256, 256, p=1.0),
+        ToTensorV2(p=1.0),
+        ], p=1.0)
 
 def seed_everything(seed):
     random.seed(seed)
@@ -57,21 +77,7 @@ def get_img(path, transforms, opencv=False):
         res = transforms(image=res)['image']
     return res
 
-def get_train_transforms():
-    return albu.Compose([
-            albu.HorizontalFlip(p=0.5),
-            albu.VerticalFlip(p=0.5),
-            albu.RandomRotate90(p=0.5),
-            albu.pytorch.ToTensorV2(p=1.0),
-        ], p=1.0)
-
-def get_valid_transforms():
-    return albu.Compose([
-            albu.Resize(256, 256),
-            albu.pytorch.ToTensorV2(p=1.0),
-        ], p=1.0)
-
-def get_stage1_columns():
+def get_stage1_columns(STAGE1_CFGS):
     new_feats = []
     for cfg in STAGE1_CFGS:
         for i in range(cfg['output_len']):
@@ -97,7 +103,7 @@ def valid_one_epoch(epoch, model, device, scheduler, val_loader, schd_loss_updat
         
         image_preds = model(imgs)
 
-        image_loss, correct_count, counts = rsna_wloss_valid(image_labels, image_preds, device)
+        image_loss, correct_count, counts = rsna_wloss(image_labels, image_preds, device)
 
         loss = image_loss/counts
         
@@ -171,7 +177,7 @@ class RSNADataset(Dataset):
     '''
     def __init__(
         self, df, label_smoothing, data_root, 
-        image_subsampling=True, transforms=None, output_label=True
+        image_subsampling=True, transforms=None, output_label=True, STAGE1_CFGS=None
     ):
         
         super().__init__()
@@ -194,7 +200,7 @@ class RSNADataset(Dataset):
         patient = self.patients[index]
         df_ = self.df.loc[self.df.StudyInstanceUID == patient]
         
-        per_image_feats = get_stage1_columns()
+        per_image_feats = get_stage1_columns(STAGE1_CFGS)
         
         if self.image_subsampling:
             img_num = min(CFG['img_num'], df_.shape[0])
@@ -267,14 +273,32 @@ class RSNADataset(Dataset):
         else:
             return imgs, per_image_preds, locs, img_num, index, seq_ix
 
+class TimeDistributed(nn.Module):
+
+    def __init__(self, module, batch_first=True):
+        super(TimeDistributed, self).__init__()
+        self.module = module
+        self.batch_first = batch_first
+
+    def forward(self, x):
+        ''' x size: (batch_size, time_steps, in_channels, height, width) '''
+        x_size= x.size()
+        c_in = x.contiguous().view(x_size[0] * x_size[1], *x_size[2:])
+        
+        c_out = self.module(c_in)
+        r_in = c_out.view(x_size[0], x_size[1], -1)
+        if self.batch_first is False:
+            r_in = r_in.permute(1, 0, 2)
+        return r_in 
+
 class RSNAClassifier(nn.Module):
     '''
     Inference version of model
     '''
-    def __init__(self, hidden_size=64):
+    def __init__(self, hidden_size=64, STAGE1_CFGS=None):
         super().__init__()
         
-        self.gru = nn.GRU(len(get_stage1_columns())+1, hidden_size, bidirectional=True, batch_first=True, num_layers=2)
+        self.gru = nn.GRU(len(get_stage1_columns(STAGE1_CFGS))+1, hidden_size, bidirectional=True, batch_first=True, num_layers=2)
         
         self.image_predictors = TimeDistributed(nn.Linear(hidden_size*2, 1))
         self.exam_predictor = nn.Linear(hidden_size*2*2, 9)
@@ -342,7 +366,7 @@ class RSNAImgClassifier(nn.Module):
 
 def prepare_train_dataloader(train, cv_df, train_fold, valid_fold, image_label=False):
     '''
-    Prepares Stage 1 dataset
+    Prepares Stage 1 dataset. Note that set pin_memory=True will be faster if memory is adequate
     Inputs:
     train - dataframe; train data from train.csv
     cv_df - dataframe; cross validation with folds
@@ -374,6 +398,6 @@ def prepare_train_dataloader(train, cv_df, train_fold, valid_fold, image_label=F
         batch_size=CFG['valid_bs'],
         num_workers=CFG['num_workers'],
         shuffle=False,
-        pin_memory=False,
+        pin_memory=False, 
     )
     return train_loader, val_loader

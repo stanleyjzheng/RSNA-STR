@@ -157,7 +157,7 @@ def inference(model, device, df, root_path):
 
     t = time.time()
 
-    ds = RSNADataset(df, 0.0, root_path,  image_subsampling=False, transforms=None, output_label=False) # change transforms=get_valiid_augmentation() to avoid TTA, or tta_augmentation()
+    ds = RSNADataset(df, 0.0, root_path, STAGE1_CFGS=STAGE1_CFGS, image_subsampling=False, transforms=None, output_label=False) # change transforms=get_valiid_augmentation() to avoid TTA, or tta_augmentation()
     
     dataloader = torch.utils.data.DataLoader(
         ds, 
@@ -307,7 +307,7 @@ if __name__ == '__main__':
         test_df = update_stage1_test_preds(test_df)
 
     device = torch.device(CFG['device'])
-    model = RSNAClassifier().to(device)
+    model = RSNAClassifier(STAGE1_CFGS=STAGE1_CFGS).to(device)
     model.load_state_dict(torch.load('{}/model_{}'.format(CFG['model_path'], CFG['tag'])))
     test_pred_df = inference(model, device, test_df, CFG['test_img_path'])       
     test_pred_df.to_csv('submission_raw.csv')
