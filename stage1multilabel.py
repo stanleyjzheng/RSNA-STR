@@ -110,7 +110,7 @@ if __name__ == '__main__':
             del model, optimizer, train_loader, val_loader, scaler, scheduler
             torch.cuda.empty_cache()
 
-        # Train on all data after val
+        # Train final model on all data after val
         '''
         train_loader, val_loader = prepare_train_dataloader(train_df, cv_df, np.arange(0, 20), np.array([]))
         device = torch.device(CFG['device'])

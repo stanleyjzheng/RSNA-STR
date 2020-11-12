@@ -8,29 +8,16 @@ For ease of use, these scripts create their own `config.json` so that a new conf
 - [RSNA STR GitHub (a clone of this repo)](www.kaggle.com/dataset/f4127c3bf3b0b540d8d17e1b4f1bddbe4ea05231c9613619e8ccd745c7dd2b17)
 
 ### How to install dependencies
-
-For notebooks:
+Works on both notebooks and scripts:
 ```python
 package_path = '../input/efficientnet-pytorch-07/efficientnet_pytorch-0.7.0'
-utils_path = '../input/rsna-str-github/'
-import sys; sys.path.append(package_path); sys.path.append(utils_path)'
-!cp ../input/gdcm-conda-install/gdcm.tar .
-!tar -xvzf gdcm.tar
-!conda install --offline ./gdcm/gdcm-2.8.9-py37h71b2a6d_0.tar.bz2
-!cp ../input/rsna-str-github/config.json .
-```
-
-For scripts:
-```python
-package_path = '../input/efficientnet-pytorch-07/efficientnet_pytorch-0.7.0'
-utils_path = '../input/rsna-str-github/'
-import sys; sys.path.append(package_path); sys.path.append(utils_path)
+import sys; sys.path.append(package_path); sys.path.append('./')
 
 bash_commands = [
             'cp ../input/gdcm-conda-install/gdcm.tar .',
             'tar -xvzf gdcm.tar',
             'conda install --offline ./gdcm/gdcm-2.8.9-py37h71b2a6d_0.tar.bz2',
-            'cp ../input/rsna-str-github/config.json .',
+            'cp ../input/rsna-str-github/utils.py .'
             ]
 import subprocess
 for bashCommand in bash_commands:

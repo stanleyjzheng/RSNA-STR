@@ -188,6 +188,7 @@ class RSNADataset(Dataset):
         self.transforms = transforms
         self.data_root = data_root
         self.output_label = output_label
+        self.STAGE1_CFGS = STAGE1_CFGS
         
     def get_patients(self):
         return self.patients
@@ -200,7 +201,7 @@ class RSNADataset(Dataset):
         patient = self.patients[index]
         df_ = self.df.loc[self.df.StudyInstanceUID == patient]
         
-        per_image_feats = get_stage1_columns(STAGE1_CFGS)
+        per_image_feats = get_stage1_columns(self.STAGE1_CFGS)
         
         if self.image_subsampling:
             img_num = min(CFG['img_num'], df_.shape[0])

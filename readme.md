@@ -13,22 +13,19 @@ All static or commonly used code is in `utils.py`, including all datasets, dicom
 `stage2GRU.py` contains the training loop for the GRU stacking CNN embeddings, based on [Kun's corresponding notebook called "CNN-GRU Baseline- Stage2 Train+Inference"](https://www.kaggle.com/khyeh0719/cnn-gru-baseline-stage2-train-inference)
 
 ### Progress
-Unfortunately, the inference script is broken at the moment.
-I will fix it when I have time, my apologies.
-
 Done so far:
 - Stage 1 multilabel training script
 - Stage 1 image level training script
 - Stage 2 GRU training script
-- TTA and non-TTA inference scripts (untested, please make sure 'train': False in config)
 - - TTAx3 inference runs in 8.5hrs with EfficientnetB0
 - - Non-TTA inference runs in 2.5 hrs with EfficientnetB0
 
-Todo:
-- Fix inference
+Todo in order of importance:
 - Test all scripts on Kaggle and update the `Kaggle` folder
+- Add `requirements.txt`
 - Postprocessing/label consistency check in inference
 - Docstrings
+- Add command line functionality
 
 Any files in the `Kaggle` directory are verified to work on Kaggle.
 Shared scripts and instructions to run are inside of the readme in the directory.
