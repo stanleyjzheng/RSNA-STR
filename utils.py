@@ -86,7 +86,7 @@ def get_stage1_columns(STAGE1_CFGS):
         
     return new_feats
 
-def valid_one_epoch(epoch, model, device, scheduler, val_loader, schd_loss_update=False):
+def valid_one_epoch(epoch, model, device, scheduler, val_loader, loss=None, schd_loss_update=False):
     '''
     Validation for stage 1 models (untested)
     '''
@@ -103,7 +103,7 @@ def valid_one_epoch(epoch, model, device, scheduler, val_loader, schd_loss_updat
         
         image_preds = model(imgs)
 
-        image_loss, correct_count, counts = rsna_wloss(image_labels, image_preds, device)
+        image_loss, correct_count, counts = loss(image_labels, image_preds, device)
 
         loss = image_loss/counts
         

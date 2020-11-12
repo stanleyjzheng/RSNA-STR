@@ -1,5 +1,4 @@
 from utils import seed_everything, RSNADatasetStage1, get_train_transforms, get_valid_transforms, RSNAImgClassifier, valid_one_epoch, prepare_train_dataloader
-
 import torch
 import catalyst
 import time
@@ -91,7 +90,7 @@ if __name__ == '__main__':
         for fold, (train_fold, valid_fold) in enumerate(zip(CFG['train_folds'], CFG['valid_folds'])):
             if fold < 0:
                 continue
-            print('Fold:', fold)   
+            print('Fold:', fold+1)   
             train_loader, val_loader = prepare_train_dataloader(train_df, cv_df, train_fold, valid_fold)
 
             device = torch.device(CFG['device'])
@@ -104,7 +103,7 @@ if __name__ == '__main__':
                 train_one_epoch(epoch, model, device, scaler, optimizer, train_loader)
                 
                 with torch.no_grad():
-                    valid_one_epoch(epoch, model, device, scheduler, val_loader, schd_loss_update=schd_loss_update)
+                    valid_one_epoch(epoch, model, device, scheduler, val_loader, loss=rsna_wloss, schd_loss_update=schd_loss_update)
             
             torch.save(model.state_dict(),'{}/model_fold_{}_{}'.format(CFG['model_path'], fold, CFG['tag']))
             del model, optimizer, train_loader, val_loader, scaler, scheduler

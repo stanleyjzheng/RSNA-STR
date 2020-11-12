@@ -8,6 +8,14 @@ import json
 
 SEED = 42321
 
+def rsna_wloss(y_true_img, y_pred_img, device):
+    bce_func = torch.nn.BCEWithLogitsLoss(reduction='sum').to(device)
+    y_pred_img = y_pred_img.flatten()
+    image_loss = bce_func(y_pred_img, y_true_img)
+    correct_count = ((y_pred_img>0) == (y_true_img>0.5)).sum(axis=0)
+    counts = y_true_img.size()[0]
+    return image_loss, correct_count, counts
+
 def get_meta(path):
     x = pydicom.read_file(path)
     loc = x.ImagePositionPatient[2]
@@ -45,14 +53,6 @@ def update_image_metas(df, data_root):
     
     print("Update meta complete: {:.4f} secs".format(time.time()-t))
     return df
-
-def rsna_wloss(y_true_img, y_pred_img, device):
-    bce_func = torch.nn.BCEWithLogitsLoss(reduction='sum').to(device)
-    y_pred_img = y_pred_img.flatten()
-    image_loss = bce_func(y_pred_img, y_true_img)
-    correct_count = ((y_pred_img>0) == (y_true_img>0.5)).sum(axis=0)
-    counts = y_true_img.size()[0]
-    return image_loss, correct_count, counts
 
 def train_one_epoch(epoch, model, device, scaler, optimizer, train_loader):
     model.train()
@@ -116,7 +116,7 @@ if __name__ == '__main__':
         for fold, (train_fold, valid_fold) in enumerate(zip(CFG['train_folds'], CFG['valid_folds'])):
             if fold < 0:
                 continue
-            print('Fold:', fold)   
+            print('Fold:', fold+1)   
             
             train_loader, val_loader = prepare_train_dataloader(train_df, cv_df, train_fold, valid_fold, image_label=True)
 
@@ -130,7 +130,7 @@ if __name__ == '__main__':
                 train_one_epoch(epoch, model, device, scaler, optimizer, train_loader)
 
                 with torch.no_grad():
-                    valid_one_epoch(epoch, model, device, scheduler, val_loader, schd_loss_update=schd_loss_update)
+                    valid_one_epoch(epoch, model, device, scheduler, val_loader, loss=rsna_wloss, schd_loss_update=schd_loss_update)
 
             torch.save(model.state_dict(),'{}/model_fold_{}_{}'.format(CFG['model_path'], fold, CFG['tag']))
             del model, optimizer, train_loader, val_loader, scaler, scheduler

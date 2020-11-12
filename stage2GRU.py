@@ -1,4 +1,4 @@
-from utils import seed_everything, RSNADatasetStage1, get_train_transforms, get_valid_transforms, RSNAImgClassifier, valid_one_epoch, prepare_train_dataloader
+from utils import seed_everything, RSNADatasetStage1, get_train_transforms, get_valid_transforms, RSNAImgClassifier, RSNAImgClassifierSingle, prepare_train_dataloader, RSNAClassifier, get_stage1_columns
 
 import torch
 import catalyst
@@ -96,7 +96,7 @@ def update_stage1_oof_preds(df, cv_df):
     
     res_file_name = STAGE1_CFGS_TAG+"-train.csv"    
     
-    new_feats = get_stage1_columns()
+    new_feats = get_stage1_columns(STAGE1_CFGS)
     for f in new_feats:
         df[f] = 0
     
@@ -199,6 +199,44 @@ def train_one_epoch(epoch, model, device, scaler, optimizer, train_loader):
                     f'loss: {loss_sum/loss_w_sum:.4f}, ' + \
                     f'time: {(time.time() - t):.4f}', end= '\r' if (step + 1) != len(train_loader) else '\n'
                 )
+
+def valid_one_epoch(epoch, model, device, scheduler, val_loader, schd_loss_update=False):
+    model.eval()
+
+    t = time.time()
+    loss_sum = 0
+    loss_w_sum = 0
+
+    for step, (imgs, per_image_preds, locs, image_labels, exam_label, image_masks) in enumerate(val_loader):
+        imgs = imgs.to(device).float()
+        per_image_preds = per_image_preds.to(device).float()
+        locs = locs.to(device).float()
+        image_masks = image_masks.to(device).float()
+        image_labels = image_labels.to(device).float()
+        exam_label = exam_label.to(device).float()
+
+        #print(image_labels.shape, exam_label.shape)
+        #with autocast():
+        image_preds, exam_pred = model(per_image_preds, locs)   #output = model(input)
+        #print(image_preds.shape, exam_pred.shape)
+        exam_pred, image_preds= post_process(exam_pred, image_preds)
+
+        loss, total_loss, total_weights = rsna_wloss_valid(image_labels, exam_label, image_preds, exam_pred, image_masks, device)
+
+        loss_sum += total_loss.detach().item()
+        loss_w_sum += total_weights.detach().item()          
+
+        if ((step + 1) % CFG['verbose_step'] == 0) or ((step + 1) == len(val_loader)):
+            print(
+                f'epoch {epoch} valid Step {step+1}/{len(val_loader)}, ' + \
+                f'loss: {loss_sum/loss_w_sum:.4f}, ' + \
+                f'time: {(time.time() - t):.4f}', end='\r' if (step + 1) != len(val_loader) else '\n'
+            )
+    
+    if schd_loss_update:
+        scheduler.step(loss_sum/loss_w_sum)
+    else:
+        scheduler.step()
 
 if __name__ == '__main__':
     with open('config.json') as json_file: 

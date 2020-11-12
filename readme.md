@@ -13,6 +13,9 @@ All static or commonly used code is in `utils.py`, including all datasets, Dicom
 `stage2GRU.py` contains the training loop for the GRU stacking CNN embeddings, based on [Kun's corresponding notebook called "CNN-GRU Baseline- Stage2 Train+Inference"](https://www.kaggle.com/khyeh0719/cnn-gru-baseline-stage2-train-inference)
 
 ### Progress
+Stage 1 multilabel validation is currently broken.
+My sincere apologies, and I will fix it ASAP when I have some time.
+
 Done so far:
 - Stage 1 multilabel training script
 - Stage 1 image level training script
@@ -112,4 +115,5 @@ CFG = {
 }
 import json
 with open('config.json', 'w+') as outfile:
-    json.dump(CFG, outfile, indent=4)```
+    json.dump(CFG, outfile, indent=4)
+```

@@ -1,5 +1,7 @@
 .vscode/
 validation/
+Inference/
+Kaggle/
 
 venv/
 __pycache__/
