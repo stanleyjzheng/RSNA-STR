@@ -1,0 +1,8 @@
+#torchvision==0.7.0
+#torch==1.6.0
+albumentatiions==0.5.1
+catalyst==20.11
+pandas==1.1.4
+numpy==1.19.4
+efficientnet-pytorch==0.7.0
+pydicom==2.1.1
