@@ -86,7 +86,7 @@ def get_stage1_columns(STAGE1_CFGS):
         
     return new_feats
 
-def valid_one_epoch(epoch, model, device, scheduler, val_loader, loss=None, schd_loss_update=False):
+def valid_one_epoch(epoch, model, device, scheduler, val_loader, loss_fn=None, schd_loss_update=False):
     '''
     Validation for stage 1 models (untested)
     '''
@@ -103,20 +103,24 @@ def valid_one_epoch(epoch, model, device, scheduler, val_loader, loss=None, schd
         
         image_preds = model(imgs)
 
-        image_loss, correct_count, counts = loss(image_labels, image_preds, device)
+        image_loss, correct_count, counts = loss_fn(image_labels, image_preds, device)
 
         loss = image_loss/counts
         
         loss_sum += image_loss.detach().item()
-        acc_sum += correct_count.detach().item()
+        acc_sum += correct_count.detach().cpu().numpy()
         loss_w_sum += counts     
-
+        if isinstance(acc_sum, np.ndarray):
+            acc_details = ["{:.5}: {:.4f}".format(f, acc_sum[i]/loss_w_sum) for i, f in enumerate(CFG['image_target_cols'])]
+            acc_details = ", ".join(acc_details)
+        else: 
+            acc_details = "Accuracy: {:.4f}".format(acc_sum/loss_w_sum)
         if ((step + 1) % CFG['verbose_step'] == 0) or ((step + 1) == len(val_loader)):
             print(
                 f'epoch {epoch} valid Step {step+1}/{len(val_loader)}, ' + \
-                f'loss: {loss_sum/loss_w_sum:.4f}, ' + \
-                f'acc: {acc_sum/loss_w_sum:.4f}, ' + \
-                f'time: {(time.time() - t):.4f}', end='\r' if (step + 1) != len(val_loader) else '\n'
+                f'loss: {loss_sum/loss_w_sum:.3f}, ' + \
+                acc_details + ', ' + \
+                f'time: {(time.time() - t):.2f}', end='\r' if (step + 1) != len(val_loader) else '\n'
             )
     
     if schd_loss_update:
@@ -294,7 +298,7 @@ class TimeDistributed(nn.Module):
 
 class RSNAClassifier(nn.Module):
     '''
-    Inference version of model
+    Inference/stage2 version of model
     '''
     def __init__(self, hidden_size=64, STAGE1_CFGS=None):
         super().__init__()
@@ -321,7 +325,7 @@ class RSNAClassifier(nn.Module):
 class RNSAImageFeatureExtractor(nn.Module):
     '''
     Loads convolutional layers of efficientnet to use as feature extractor for RNN
-    Used in inference
+    Used in inference/stage2
     '''
     def __init__(self):
         super().__init__()

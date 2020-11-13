@@ -16,44 +16,6 @@ def rsna_wloss(y_true_img, y_pred_img, device):
     counts = y_true_img.size()[0]
     return image_loss, correct_count, counts
 
-def get_meta(path):
-    x = pydicom.read_file(path)
-    loc = x.ImagePositionPatient[2]
-    img_min = x.pixel_array.min()
-    img_max = x.pixel_array.max()
-    return (loc, img_min, img_max)
-
-def update_image_metas(df, data_root):
-    from multiprocessing import Pool
-    from tqdm import tqdm
-    
-    t = time.time()
-    paths = data_root + "/" + df.StudyInstanceUID.apply(str) + "/" + df.SeriesInstanceUID.apply(str) + "/" + df.SOPInstanceUID.apply(str) + ".dcm"
-    print(type(paths))
-    print('paths num = {:d}'.format(len(paths)))
-    
-    with Pool(CFG['num_workers']) as pool:
-        locs = []
-        img_mins = []
-        img_maxs = []
-        
-        for p in tqdm(df.StudyInstanceUID.unique()):
-            meta = list(pool.map(get_meta, list(paths[df.StudyInstanceUID==p])))
-            locs_, img_mins_, img_maxs_ = map(list, zip(*meta))
-            locs += locs_
-            img_mins += img_mins_
-            img_maxs += img_maxs_
-    
-    assert len(locs) == df.shape[0]
-    df['zpos'] = locs
-    df['img_min'] = img_mins
-    df['img_max'] = img_maxs
-    df.img_min = df.StudyInstanceUID.map(df.groupby('StudyInstanceUID')['img_min'].min()) # group into patient level
-    df.img_max = df.StudyInstanceUID.map(df.groupby('StudyInstanceUID')['img_max'].max())
-    
-    print("Update meta complete: {:.4f} secs".format(time.time()-t))
-    return df
-
 def train_one_epoch(epoch, model, device, scaler, optimizer, train_loader):
     model.train()
 
@@ -130,9 +92,9 @@ if __name__ == '__main__':
                 train_one_epoch(epoch, model, device, scaler, optimizer, train_loader)
 
                 with torch.no_grad():
-                    valid_one_epoch(epoch, model, device, scheduler, val_loader, loss=rsna_wloss, schd_loss_update=schd_loss_update)
+                    valid_one_epoch(epoch, model, device, scheduler, val_loader, loss_fn=rsna_wloss, schd_loss_update=schd_loss_update)
 
-            torch.save(model.state_dict(),'{}/model_fold_{}_{}'.format(CFG['model_path'], fold, CFG['tag']))
+            torch.save(model.state_dict(),'{}/model_fold_{}_{}'.format(CFG['save_path'], fold, CFG['tag']))
             del model, optimizer, train_loader, val_loader, scaler, scheduler
             torch.cuda.empty_cache()
         
@@ -150,7 +112,7 @@ if __name__ == '__main__':
         for epoch in range(CFG['epochs']):
             train_one_epoch(epoch, model, device, scaler, optimizer, train_loader)
 
-        torch.save(model.state_dict(),'{}/model_{}'.format(CFG['model_path'], CFG['tag']))
+        torch.save(model.state_dict(),'{}/model_{}'.format(CFG['save_path'], CFG['tag']))
         '''
     else:
         assert False

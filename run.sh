@@ -6,6 +6,6 @@ echo Installing PyTorch
 conda install pytorch torchvision cudatoolkit=10.2 -c pytorch
 python -c'import torch; print(torch.cuda.is_available())'
 echo Installing requirements.txt
-pip install -r requirements.txt -q
-conda install -c conda-forge pydicom
-conda install gdcm -c conda-forge
+pip3 install -r requirements.txt -q
+conda install -c conda-forge pydicom --quiet
+conda install gdcm -c conda-forge --quiet

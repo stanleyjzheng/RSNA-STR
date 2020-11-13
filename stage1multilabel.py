@@ -103,7 +103,7 @@ if __name__ == '__main__':
                 train_one_epoch(epoch, model, device, scaler, optimizer, train_loader)
                 
                 with torch.no_grad():
-                    valid_one_epoch(epoch, model, device, scheduler, val_loader, loss=rsna_wloss, schd_loss_update=schd_loss_update)
+                    valid_one_epoch(epoch, model, device, scheduler, val_loader, loss_fn=rsna_wloss, schd_loss_update=schd_loss_update)
             
             torch.save(model.state_dict(),'{}/model_fold_{}_{}'.format(CFG['model_path'], fold, CFG['tag']))
             del model, optimizer, train_loader, val_loader, scaler, scheduler

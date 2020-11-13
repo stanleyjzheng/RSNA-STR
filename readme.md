@@ -13,43 +13,35 @@ All static or commonly used code is in `utils.py`, including all datasets, Dicom
 `stage2GRU.py` contains the training loop for the GRU stacking CNN embeddings, based on [Kun's corresponding notebook called "CNN-GRU Baseline- Stage2 Train+Inference"](https://www.kaggle.com/khyeh0719/cnn-gru-baseline-stage2-train-inference)
 
 ### Progress
-Stage 1 multilabel validation is currently broken.
-My sincere apologies, and I will fix it ASAP when I have some time.
-
 Done so far:
-- Stage 1 multilabel training script
-- Stage 1 image level training script
+- Stage 1 multilabel training script ([Shared Kaggle Notebook](https://www.kaggle.com/stanleyjzheng/rsna-github-multilabel-testing?scriptVersionId=46772906))
+- Stage 1 image level training script ([Shared Kaggle Notebook](https://www.kaggle.com/stanleyjzheng/rsna-github-image-level-testing?scriptVersionId=46772617))
 - Stage 2 GRU training script
 
 Todo in order of importance:
-- Test all scripts on Kaggle and update the `Kaggle` folder
-- Add `requirements.txt`
+- Make Stage 2 GRU training more representative of real inference (add train transforms, improve `RSNADataset`)
 - Postprocessing/label consistency check in inference
+- Make command line tool (perhaps shell scripts)
 - Docstrings
-- Add command line functionality
 
 ### About `config.json`
 JSON must be called config.json and in the same directory as `utils.py` and the training script.
 
 Parameters:
 - train: Set to true if training, false if doing inference
-- train_img_path: Path to directory containing train images. On Kaggle, defaults to `../input/rsna-str-pulmonary-embolism-detection/train`
-- test_img_path: Path to directory containing test images. On Kaggle, defaults to `../input/rsna-str-pulmonary-embolism-detection/test`
 - cv_fold_path: Path to CSV containing study folds. Can be downloaded [here](https://www.kaggle.com/khyeh0719/stratified-validation-strategy)
 - train_path: Path to `train.csv`
 - test_path: Path to `test.csv`
 - image_target_cols: List of target columns including image level
-- img_size: Image dimension (square)
-- lr: Learning rate
-- accum_iter: Accumulative iteration (set to same as epochs)
 - verbose_step: Number of steps between printing metrics
 - num_workers: Number of threads to run concurrent processes with
 - efbnet: Which efficientnet architecture to use. For example, 'efbnet': 'efficientnet-b7'
 - train_folds: Nested list with folds to train with. Dimension 0 is the number of folds to run.
 
 ### Using on Discovery Cluster
-Please run `run.sh`. 
-Note that this is still untested, and I have no clue how to download the 910gb dataset.
+Please run `./run.sh` to install dependencies. 
+Note that this is untested, and I have no clue how to download the 910gb dataset.
+`dataset.sh` contains a small script to clone the Kaggle RSNA dataset as well as a few sanity check models.
 
 ### Using on Kaggle
 To use these scripts on Kaggle, simply add the following datasets:
@@ -63,7 +55,7 @@ The config file will be created during each run (since updating `config.json` re
 
 ```python
 package_path = '../input/efficientnet-pytorch-07/efficientnet_pytorch-0.7.0'
-import sys; sys.path.append(package_path)
+import sys; sys.path.append(package_path); sys.path.append('./')
 
 bash_commands = [
             'cp ../input/gdcm-conda-install/gdcm.tar .',
@@ -106,11 +98,12 @@ CFG = {
     'num_workers': 4,
     'efbnet': 'efficientnet-b0',
     
-    'train_folds': [list(range(0, 1))],
+    'train_folds': [list(range(0, 16))],
     
-    'valid_folds': [list(range(2, 3))],
+    'valid_folds': [list(range(17, 21))],
     
     'model_path': '../input/kh-rsna-model',
+    'save_path': '.',
     'tag': 'efb0_stage1_multilabel',
 }
 import json

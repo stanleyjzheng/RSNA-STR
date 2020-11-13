@@ -2,6 +2,7 @@
 validation/
 Inference/
 Kaggle/
+inference/
 
 venv/
 __pycache__/
