@@ -406,3 +406,33 @@ def prepare_train_dataloader(train, cv_df, train_fold, valid_fold, image_label=F
         pin_memory=False, 
     )
     return train_loader, val_loader
+
+def prepare_stage2_train_dataloader(train, cv_df, train_fold, valid_fold, STAGE1_CFGS):
+    
+    train_patients = cv_df.loc[cv_df.fold.isin(train_fold), 'StudyInstanceUID'].unique()
+    valid_patients = cv_df.loc[cv_df.fold.isin(valid_fold), 'StudyInstanceUID'].unique()
+
+    train_ = train.loc[train.StudyInstanceUID.isin(train_patients),:].reset_index(drop=True)
+    valid_ = train.loc[train.StudyInstanceUID.isin(valid_patients),:].reset_index(drop=True)
+
+    # train mode to do image-level subsampling
+    train_ds = RSNADataset(train_, 0.0, CFG['train_img_path'], STAGE1_CFGS, image_subsampling=True, transforms=get_train_transforms(), output_label=True) 
+    valid_ds = RSNADataset(valid_, 0.0, CFG['train_img_path'], STAGE1_CFGS, image_subsampling=False, transforms=get_valid_transforms(), output_label=True)
+
+    train_loader = torch.utils.data.DataLoader(
+        train_ds,
+        batch_size=CFG['train_bs'],
+        pin_memory=True,
+        drop_last=False,
+        shuffle=True,        
+        num_workers=CFG['num_workers'],
+    )
+    val_loader = torch.utils.data.DataLoader(
+        valid_ds, 
+        batch_size=CFG['train_bs'],
+        num_workers=CFG['num_workers'],
+        shuffle=False,
+        pin_memory=True,
+    )
+
+    return train_loader, val_loader

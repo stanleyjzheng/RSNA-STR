@@ -1,4 +1,4 @@
-from utils import seed_everything, RSNADatasetStage1, get_train_transforms, get_valid_transforms, RSNAImgClassifier, RSNAImgClassifierSingle, prepare_train_dataloader, RSNAClassifier, get_stage1_columns
+from utils import seed_everything, RSNADatasetStage1, get_train_transforms, get_valid_transforms, RSNAImgClassifier, RSNAImgClassifierSingle, prepare_stage2_train_dataloader, RSNAClassifier, get_stage1_columns
 
 import torch
 import catalyst
@@ -68,7 +68,6 @@ def rsna_wloss_inference(y_true_img, y_true_exam, y_pred_img, y_pred_exam, chunk
     return final_loss
 
 def rsna_wloss(y_true_img, y_true_exam, y_pred_img, y_pred_exam, image_masks, device):
-    
     label_w = torch.tensor([0.0736196319, 0.2346625767, 0.0782208589, 0.06257668712, 0.1042944785, 0.06257668712, 0.1042944785, 0.1877300613, 0.09202453988]).view(1, -1).to(device)
     img_w = 0.07361963
     bce_func = torch.nn.BCEWithLogitsLoss(reduction='none').to(device)
@@ -93,7 +92,6 @@ def rsna_wloss(y_true_img, y_true_exam, y_pred_img, y_pred_exam, image_masks, de
     return final_loss, total_loss, total_weights
 
 def update_stage1_oof_preds(df, cv_df):
-    
     res_file_name = STAGE1_CFGS_TAG+"-train.csv"    
     
     new_feats = get_stage1_columns(STAGE1_CFGS)
@@ -258,7 +256,7 @@ if __name__ == '__main__':
 
     for fold, (train_fold, valid_fold) in enumerate(zip(CFG['train_folds'], CFG['valid_folds'])):
 
-        train_loader, val_loader = prepare_train_dataloader(train_df, cv_df, train_fold, valid_fold)
+        train_loader, val_loader = prepare_stage2_train_dataloader(train_df, cv_df, train_fold, valid_fold)
 
         device = torch.device(CFG['device'])
         model = RSNAClassifier(STAGE1_CFGS=STAGE1_CFGS).to(device)
@@ -273,9 +271,9 @@ if __name__ == '__main__':
             with torch.no_grad():
                 valid_one_epoch(epoch, model, device, scheduler, val_loader, schd_loss_update=schd_loss_update)
 
-        torch.save(model.state_dict(),'{}/model_fold_{}_{}'.format(CFG['model_path'], fold, CFG['tag']))
+        torch.save(model.state_dict(),'{}/model_fold_{}_{}'.format(CFG['save_path'], fold, CFG['tag']))
         
-        model.load_state_dict(torch.load('{}/model_fold_{}_{}'.format(CFG['model_path'], fold, CFG['tag'])))
+        model.load_state_dict(torch.load('{}/model_fold_{}_{}'.format(CFG['save_path'], fold, CFG['tag'])))
         
         # prediction for oof
         valid_patients = cv_df.loc[cv_df.fold.isin(valid_fold), 'StudyInstanceUID'].unique()
@@ -296,8 +294,9 @@ if __name__ == '__main__':
         
         del model, optimizer, train_loader, val_loader, scaler, scheduler
         torch.cuda.empty_cache()
-        
-        train_loader, val_loader = prepare_train_dataloader(train_df, cv_df, np.arange(0, 20), np.array([]))
+        # Train final stage 2 model on all data
+        '''
+        train_loader, val_loader = prepare_stage2_train_dataloader(train_df, cv_df, np.arange(0, 20), np.array([]))
         device = torch.device(CFG['device'])
         model = RSNAClassifier(STAGE1_CFGS=STAGE1_CFGS).to(device)
         scaler = GradScaler()   
@@ -307,4 +306,5 @@ if __name__ == '__main__':
         for epoch in range(CFG['epochs']):
             train_one_epoch(epoch, model, device, scaler, optimizer, train_loader)
 
-        torch.save(model.state_dict(),'{}/model_{}'.format(CFG['model_path'], CFG['tag']))
+        torch.save(model.state_dict(),'{}/model_{}'.format(CFG['save_path'], CFG['tag']))
+        '''

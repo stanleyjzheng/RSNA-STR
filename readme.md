@@ -14,8 +14,8 @@ All static or commonly used code is in `utils.py`, including all datasets, Dicom
 
 ### Progress
 Done so far:
-- Stage 1 multilabel training script ([Shared Kaggle Notebook](https://www.kaggle.com/stanleyjzheng/rsna-github-multilabel-testing?scriptVersionId=46772906))
-- Stage 1 image level training script ([Shared Kaggle Notebook](https://www.kaggle.com/stanleyjzheng/rsna-github-image-level-testing?scriptVersionId=46772617))
+- Stage 1 multilabel training script ([Shared Kaggle Notebook](https://www.kaggle.com/stanleyjzheng/rsna-github-multilabel-testing?scriptVersionId=468178756))
+- Stage 1 image level training script ([Shared Kaggle Notebook](https://www.kaggle.com/stanleyjzheng/rsna-github-image-level-testing?scriptVersionId=46817626))
 - Stage 2 GRU training script
 
 Todo in order of importance:
