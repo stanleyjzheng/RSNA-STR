@@ -105,7 +105,7 @@ if __name__ == '__main__':
                 with torch.no_grad():
                     valid_one_epoch(epoch, model, device, scheduler, val_loader, loss_fn=rsna_wloss, schd_loss_update=schd_loss_update)
             
-            torch.save(model.state_dict(),'{}/model_fold_{}_{}'.format(CFG['model_path'], fold, CFG['tag']))
+            torch.save(model.state_dict(),'{}/model_fold_{}_{}'.format(CFG['save_path'], fold, CFG['tag']))
             del model, optimizer, train_loader, val_loader, scaler, scheduler
             torch.cuda.empty_cache()
 
@@ -121,7 +121,7 @@ if __name__ == '__main__':
         for epoch in range(CFG['epochs']):
             train_one_epoch(epoch, model, device, scaler, optimizer, train_loader)
 
-        torch.save(model.state_dict(),'{}/model_{}'.format(CFG['model_path'], CFG['tag']))
+        torch.save(model.state_dict(),'{}/model_{}'.format(CFG['save_path'], CFG['tag']))
         '''
     else:
         assert False
