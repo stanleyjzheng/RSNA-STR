@@ -16,6 +16,7 @@
         "central_pe",
         "indeterminate"
     ],
+    "img_num": 200,
     "img_size": 256,
     "lr": 0.0005,
     "epochs": 1,
