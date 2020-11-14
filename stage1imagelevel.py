@@ -1,4 +1,4 @@
-from utils import seed_everything, RSNADatasetStage1, get_train_transforms, get_valid_transforms, RSNAImgClassifier, valid_one_epoch, prepare_train_dataloader, RSNAImgClassifierSingle
+from utils import seed_everything, RSNADatasetStage1, get_valid_transforms, RSNAImgClassifier, valid_one_epoch, prepare_train_dataloader, RSNAImgClassifierSingle
 import torch
 import catalyst
 import time
@@ -7,6 +7,18 @@ import numpy as np
 import json
 
 SEED = 42321
+
+def get_train_transforms():
+    return albu.Compose([
+        albu.Resize(CFG["img_size"], CFG["img_size"], p=1.0),
+        # albu.VerticalFlip(p=0.5),
+        # albu.RandomRotate90(p=0.5),
+        # albu.CLAHE(p=0.3),
+        # albu.RandomBrightnessContrast(p=0.3),
+        # albu.HueSaturationValue(p=0.3),
+        # albu.Cutout(p=0.3),
+        ToTensorV2(p=1.0),
+        ], p=1.0)
 
 def rsna_wloss(y_true_img, y_pred_img, device):
     bce_func = torch.nn.BCEWithLogitsLoss(reduction='sum').to(device)
@@ -80,7 +92,7 @@ if __name__ == '__main__':
                 continue
             print('Fold:', fold+1)   
             
-            train_loader, val_loader = prepare_train_dataloader(train_df, cv_df, train_fold, valid_fold, image_label=True)
+            train_loader, val_loader = prepare_train_dataloader(train_df, cv_df, train_fold, valid_fold, get_train_transoforms, image_label=True)
 
             device = torch.device(CFG['device'])
             model = RSNAImgClassifierSingle().to(device)
@@ -100,7 +112,7 @@ if __name__ == '__main__':
         
         # train a final stage 1 model with all data
         '''
-        train_loader, val_loader = prepare_train_dataloader(train_df, cv_df, np.arange(0, 20), np.array([]))
+        train_loader, val_loader = prepare_train_dataloader(train_df, cv_df, np.arange(0, 20), np.array([]), get_train_transforms)
         #print(len(train_loader), len(val_loader))
         device = torch.device(CFG['device'])
         model = RSNAImgClassifier().to(device)

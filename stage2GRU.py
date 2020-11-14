@@ -1,4 +1,4 @@
-from utils import seed_everything, RSNADatasetStage1, get_train_transforms, get_valid_transforms, RSNAImgClassifier, RSNAImgClassifierSingle, prepare_stage2_train_dataloader, RSNAClassifier, get_stage1_columns
+from utils import seed_everything, RSNADatasetStage1, get_valid_transforms, RSNAImgClassifier, RSNAImgClassifierSingle, prepare_stage2_train_dataloader, RSNAClassifier, get_stage1_columns
 
 import torch
 import catalyst
@@ -26,6 +26,18 @@ STAGE1_CFGS = [
     },
 ]
 STAGE1_CFGS_TAG = 'efb0-stage1-single-multi-label'
+
+def get_train_transforms():
+    return albu.Compose([
+        albu.Resize(CFG["img_size"], CFG["img_size"], p=1.0),
+        # albu.VerticalFlip(p=0.5),
+        # albu.RandomRotate90(p=0.5),
+        # albu.CLAHE(p=0.3),
+        # albu.RandomBrightnessContrast(p=0.3),
+        # albu.HueSaturationValue(p=0.3),
+        # albu.Cutout(p=0.3),
+        ToTensorV2(p=1.0),
+        ], p=1.0)
 
 def rsna_wloss_inference(y_true_img, y_true_exam, y_pred_img, y_pred_exam, chunk_sizes):
     '''
@@ -256,7 +268,7 @@ if __name__ == '__main__':
 
     for fold, (train_fold, valid_fold) in enumerate(zip(CFG['train_folds'], CFG['valid_folds'])):
 
-        train_loader, val_loader = prepare_stage2_train_dataloader(train_df, cv_df, train_fold, valid_fold)
+        train_loader, val_loader = prepare_stage2_train_dataloader(train_df, cv_df, train_fold, valid_fold, get_train_transforms)
 
         device = torch.device(CFG['device'])
         model = RSNAClassifier(STAGE1_CFGS=STAGE1_CFGS).to(device)
@@ -296,7 +308,7 @@ if __name__ == '__main__':
         torch.cuda.empty_cache()
         # Train final stage 2 model on all data
         '''
-        train_loader, val_loader = prepare_stage2_train_dataloader(train_df, cv_df, np.arange(0, 20), np.array([]))
+        train_loader, val_loader = prepare_stage2_train_dataloader(train_df, cv_df, np.arange(0, 20), np.array([]), get_train_transforms)
         device = torch.device(CFG['device'])
         model = RSNAClassifier(STAGE1_CFGS=STAGE1_CFGS).to(device)
         scaler = GradScaler()   

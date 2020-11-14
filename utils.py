@@ -15,21 +15,9 @@ import time
 with open('config.json') as json_file: 
     CFG = json.load(json_file) 
 
-def get_train_transforms():
-    return albu.Compose([
-        albu.Resize(256, 256, p=1.0),
-        albu.VerticalFlip(p=0.5),
-        albu.RandomRotate90(p=0.5),
-        albu.CLAHE(p=0.3),
-        albu.RandomBrightnessContrast(p=0.3),
-        albu.HueSaturationValue(p=0.3),
-        albu.Cutout(p=0.3),
-        ToTensorV2(p=1.0),
-        ], p=1.0)
-
 def get_valid_transforms():
     return albu.Compose([
-        albu.Resize(256, 256, p=1.0),
+        albu.Resize(CFG["img_size"], CFG["img_size"], p=1.0),
         ToTensorV2(p=1.0),
         ], p=1.0)
 
@@ -370,7 +358,7 @@ class RSNAImgClassifier(nn.Module):
         
         return image_preds
 
-def prepare_train_dataloader(train, cv_df, train_fold, valid_fold, image_label=False):
+def prepare_train_dataloader(train, cv_df, train_fold, valid_fold, train_transforms, image_label=False):
     '''
     Prepares Stage 1 dataset. Note that set pin_memory=True will be faster if memory is adequate
     Inputs:
@@ -388,7 +376,7 @@ def prepare_train_dataloader(train, cv_df, train_fold, valid_fold, image_label=F
     valid_ = train.loc[train.StudyInstanceUID.isin(valid_patients),:].reset_index(drop=True)
 
     # train mode to do image-level subsampling
-    train_ds = RSNADatasetStage1(train_, 0.0, CFG['train_img_path'],  image_subsampling=False, transforms=get_train_transforms(), output_label=True, image_label=image_label, opencv=True) 
+    train_ds = RSNADatasetStage1(train_, 0.0, CFG['train_img_path'],  image_subsampling=False, transforms=train_transforms(), output_label=True, image_label=image_label, opencv=True) 
     valid_ds = RSNADatasetStage1(valid_, 0.0, CFG['train_img_path'],  image_subsampling=False, transforms=get_valid_transforms(), output_label=True, image_label=image_label)
 
     train_loader = torch.utils.data.DataLoader(
@@ -408,7 +396,7 @@ def prepare_train_dataloader(train, cv_df, train_fold, valid_fold, image_label=F
     )
     return train_loader, val_loader
 
-def prepare_stage2_train_dataloader(train, cv_df, train_fold, valid_fold, STAGE1_CFGS):
+def prepare_stage2_train_dataloader(train, cv_df, train_fold, valid_fold, train_transforms, STAGE1_CFGS):
     
     train_patients = cv_df.loc[cv_df.fold.isin(train_fold), 'StudyInstanceUID'].unique()
     valid_patients = cv_df.loc[cv_df.fold.isin(valid_fold), 'StudyInstanceUID'].unique()
@@ -417,7 +405,7 @@ def prepare_stage2_train_dataloader(train, cv_df, train_fold, valid_fold, STAGE1
     valid_ = train.loc[train.StudyInstanceUID.isin(valid_patients),:].reset_index(drop=True)
 
     # train mode to do image-level subsampling
-    train_ds = RSNADataset(train_, 0.0, CFG['train_img_path'], STAGE1_CFGS=STAGE1_CFGS, image_subsampling=True, transforms=get_train_transforms(), output_label=True) 
+    train_ds = RSNADataset(train_, 0.0, CFG['train_img_path'], STAGE1_CFGS=STAGE1_CFGS, image_subsampling=True, transforms=train_transforms(), output_label=True) 
     valid_ds = RSNADataset(valid_, 0.0, CFG['train_img_path'], STAGE1_CFGS=STAGE1_CFGS, image_subsampling=False, transforms=get_valid_transforms(), output_label=True)
 
     train_loader = torch.utils.data.DataLoader(
