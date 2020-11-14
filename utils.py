@@ -148,6 +148,7 @@ class RSNADatasetStage1(Dataset):
         self.output_label = output_label
         self.opencv = opencv
         self.image_label = image_label
+        self.image_subsampling = image_subsampling
     
     def __len__(self):
         return self.df.shape[0]
@@ -416,8 +417,8 @@ def prepare_stage2_train_dataloader(train, cv_df, train_fold, valid_fold, STAGE1
     valid_ = train.loc[train.StudyInstanceUID.isin(valid_patients),:].reset_index(drop=True)
 
     # train mode to do image-level subsampling
-    train_ds = RSNADataset(train_, 0.0, CFG['train_img_path'], STAGE1_CFGS, image_subsampling=True, transforms=get_train_transforms(), output_label=True) 
-    valid_ds = RSNADataset(valid_, 0.0, CFG['train_img_path'], STAGE1_CFGS, image_subsampling=False, transforms=get_valid_transforms(), output_label=True)
+    train_ds = RSNADataset(train_, 0.0, CFG['train_img_path'], STAGE1_CFGS=STAGE1_CFGS, image_subsampling=True, transforms=get_train_transforms(), output_label=True) 
+    valid_ds = RSNADataset(valid_, 0.0, CFG['train_img_path'], STAGE1_CFGS=STAGE1_CFGS, image_subsampling=False, transforms=get_valid_transforms(), output_label=True)
 
     train_loader = torch.utils.data.DataLoader(
         train_ds,

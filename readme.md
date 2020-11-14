@@ -16,7 +16,7 @@ All static or commonly used code is in `utils.py`, including all datasets, Dicom
 Done so far:
 - Stage 1 multilabel training script ([Shared Kaggle Notebook](https://www.kaggle.com/stanleyjzheng/rsna-github-multilabel-testing?scriptVersionId=468178756))
 - Stage 1 image level training script ([Shared Kaggle Notebook](https://www.kaggle.com/stanleyjzheng/rsna-github-image-level-testing?scriptVersionId=46817626))
-- Stage 2 GRU training script
+- Stage 2 GRU training script ([Shared Kaggle Notebook](https://www.kaggle.com/stanleyjzheng/rsna-str-stage-2-gru-train?scriptVersionId=46890528))
 
 Todo in order of importance:
 - Make Stage 2 GRU training more representative of real inference (add train transforms, improve `RSNADataset`)
