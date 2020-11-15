@@ -249,7 +249,7 @@ def valid_one_epoch(epoch, model, device, scheduler, val_loader, schd_loss_updat
         scheduler.step()
 
 if __name__ == '__main__':
-    with open('config.json') as json_file: 
+    with open('stage2config.json') as json_file:
         CFG = json.load(json_file) 
     
     from  torch.cuda.amp import autocast, GradScaler # for training only, need nightly build pytorch

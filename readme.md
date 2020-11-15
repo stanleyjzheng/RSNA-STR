@@ -77,6 +77,7 @@ CFG = {
         'central_pe', # exam level
         'indeterminate' # exam level
     ],
+    'img_num': 200,
     'img_size': 256,
     'lr': 0.0005,
     'epochs': 1,

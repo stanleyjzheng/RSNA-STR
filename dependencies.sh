@@ -1,5 +1,5 @@
-module load cuda/10.2
-module load anaconda3/3.7
+#module load cuda/10.2
+#module load anaconda3/3.7
 conda create --name RSNA python=3.7 anaconda
 conda activate RSNA 
 echo Installing PyTorch

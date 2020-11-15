@@ -86,40 +86,34 @@ if __name__ == '__main__':
         from torch.cuda.amp import autocast, GradScaler # for training only, need nightly build pytorch
 
     seed_everything(SEED)
-    
-    if CFG['train']:
-        # read train file
-        train_df = pd.read_csv(CFG['train_path'])
 
-        # read cv file
-        cv_df = pd.read_csv(CFG['cv_fold_path'])
+    # read train file
+    train_df = pd.read_csv(CFG['train_path'])
 
-        # img must be sorted before feeding into NN for correct orders
-    else:
-        test_df = pd.read_csv(CFG['test_path'])
-    
-    if CFG['train']:
-        for fold, (train_fold, valid_fold) in enumerate(zip(CFG['train_folds'], CFG['valid_folds'])):
-            if fold < 0:
-                continue
-            print('Fold:', fold+1)   
-            train_loader, val_loader = prepare_train_dataloader(train_df, cv_df, train_fold, valid_fold, get_train_transforms)
+    # read cv file
+    cv_df = pd.read_csv(CFG['cv_fold_path'])
 
-            device = torch.device(CFG['device'])
-            model = RSNAImgClassifier().to(device)
-            scaler = GradScaler()   
-            optimizer = torch.optim.Adam(model.parameters(), lr=CFG['lr'])
-            scheduler = torch.optim.lr_scheduler.StepLR(optimizer, gamma=0.1, step_size=1); schd_loss_update=False
+    for fold, (train_fold, valid_fold) in enumerate(zip(CFG['train_folds'], CFG['valid_folds'])):
+        if fold < 0:
+            continue
+        print('Fold:', fold+1)   
+        train_loader, val_loader = prepare_train_dataloader(train_df, cv_df, train_fold, valid_fold, get_train_transforms)
+
+        device = torch.device(CFG['device'])
+        model = RSNAImgClassifier().to(device)
+        scaler = GradScaler()   
+        optimizer = torch.optim.Adam(model.parameters(), lr=CFG['lr'])
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, gamma=0.1, step_size=1); schd_loss_update=False
+        
+        for epoch in range(CFG['epochs']):
+            train_one_epoch(epoch, model, device, scaler, optimizer, train_loader)
             
-            for epoch in range(CFG['epochs']):
-                train_one_epoch(epoch, model, device, scaler, optimizer, train_loader)
-                
-                with torch.no_grad():
-                    valid_one_epoch(epoch, model, device, scheduler, val_loader, loss_fn=rsna_wloss, schd_loss_update=schd_loss_update)
-            
-            torch.save(model.state_dict(),'{}/model_fold_{}_{}'.format(CFG['save_path'], fold, CFG['tag']))
-            del model, optimizer, train_loader, val_loader, scaler, scheduler
-            torch.cuda.empty_cache()
+            with torch.no_grad():
+                valid_one_epoch(epoch, model, device, scheduler, val_loader, loss_fn=rsna_wloss, schd_loss_update=schd_loss_update)
+        
+        torch.save(model.state_dict(),'{}/model_fold_{}_{}'.format(CFG['save_path'], fold, CFG['tag']))
+        del model, optimizer, train_loader, val_loader, scaler, scheduler
+        torch.cuda.empty_cache()
 
         # Train final model on all data after val
         '''
@@ -135,5 +129,3 @@ if __name__ == '__main__':
 
         torch.save(model.state_dict(),'{}/model_{}'.format(CFG['save_path'], CFG['tag']))
         '''
-    else:
-        assert False

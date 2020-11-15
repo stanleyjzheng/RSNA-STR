@@ -3,6 +3,7 @@ validation/
 Inference/
 Kaggle/
 inference/
+3d/
 
 venv/
 __pycache__/
