@@ -82,8 +82,7 @@ def train_one_epoch(epoch, model, device, scaler, optimizer, train_loader):
 if __name__ == '__main__':
     with open('config.json') as json_file: 
         CFG = json.load(json_file) 
-    if CFG['train']:
-        from torch.cuda.amp import autocast, GradScaler # for training only, need nightly build pytorch
+    from torch.cuda.amp import autocast, GradScaler # for training only, need pytorch 1.7
 
     seed_everything(SEED)
 
