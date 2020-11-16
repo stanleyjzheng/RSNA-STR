@@ -8,4 +8,4 @@ echo Installing requirements.txt
 pip3 install -r requirements.txt -q
 conda install -c conda-forge pydicom --quiet
 conda install gdcm -c conda-forge --quiet
-python -c'import torch; print(torch.cuda.is_available())'
+python3 -c'import torch; print(torch.cuda.is_available())'
