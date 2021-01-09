@@ -12,7 +12,7 @@ Done so far:
 
 Todo in order of importance:
 - Make Stage 2 GRU training more representative of real inference (add train transforms, improve `RSNADataset`)
-- Postprocessing/label consistency check in inference
+- 3d augmentations (currently committed but not working and extremely experimental)
 - Docstrings
 
 ### About `config.json`
