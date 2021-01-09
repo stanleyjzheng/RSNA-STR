@@ -47,16 +47,19 @@ def get_img(path, transforms, opencv=False):
     path - str; image path
     transforms - albu.Compose; containing desired transformations
     '''
-    d = pydicom.read_file(path)
-    img = (d.pixel_array * d.RescaleSlope) + d.RescaleIntercept
-    
-    r = window(img, -600, 1500)
-    g = window(img, 100, 700)
-    b = window(img, 40, 400)
-    
-    res = np.concatenate([r[:, :, np.newaxis],
-                          g[:, :, np.newaxis],
-                          b[:, :, np.newaxis]], axis=-1)
+    out = np.array([])
+    for i in paths:
+        d = pydicom.read_file(path)
+        img = (d.pixel_array * d.RescaleSlope) + d.RescaleIntercept
+        
+        r = window(img, -600, 1500)
+        g = window(img, 100, 700)
+        b = window(img, 40, 400)
+        
+        res = np.concatenate([r[:, :, np.newaxis],
+                            g[:, :, np.newaxis],
+                            b[:, :, np.newaxis]], axis=-1)
+        out.append(res) # yes this is very inefficient but the computer is fast.
     
     if opencv:
         res = transforms(image=(res*255.0).astype('uint8'))['image']
@@ -142,20 +145,25 @@ class RSNADatasetStage1(Dataset):
         return self.df.shape[0]
     
     def __getitem__(self, index: int):
+        study = self.df['StudyInstanceUID'].unique()[index]
+        study_df = self.df.loc[self.df['StudyInstanceUID']==study]
         # get labels
         if self.output_label:
             if self.image_label:
-                target = self.df.iloc[index][CFG['image_target_cols'][0]]
+                target = study_df[CFG['image_target_cols'][0]].values
             else:
-                target = self.df[CFG['image_target_cols']].values[index]
+                target = study_df[CFG['image_target_cols']].values
                 target[1:-1] = target[0]*target[1:-1] # if PE == 1, keep the original label; otherwise clean to 0 (except indeterminate)
-            
-        path = "{}/{}/{}/{}.dcm".format(self.data_root, 
+                # we're going to have to fix the above line since there's an additional dimension
+                # but i haven't downloaded the dataset yet so we'll figure that out later
+        path_format = "{}/{}/{}/{}.dcm"
+                                .format(self.data_root, 
                                         self.df.iloc[index]['StudyInstanceUID'], 
                                         self.df.iloc[index]['SeriesInstanceUID'], 
                                         self.df.iloc[index]['SOPInstanceUID'])
+        paths = [path_format.format(self.data_root, study_df[index]['StudyInstanceUID'], study_df[index]['SeriesInstanceUID'], study_df[index]['SOPInstanceUID']) for i in range(study_df.shape[0])]
 
-        img = get_img(path, self.transforms, self.opencv)
+        img = get_img(paths, self.transforms, self.opencv)
 
         if self.output_label == True:
             target = np.clip(target, self.label_smoothing, 1 - self.label_smoothing)    

@@ -115,7 +115,6 @@ def update_stage1_oof_preds(df, cv_df):
         print('img acc:', ((df[new_feats[0]]>0)==df[CFG['image_target_cols'][0]]).mean())
         return df
     
-    
     for fold, (train_fold, valid_fold) in enumerate(zip(CFG['train_folds'], CFG['valid_folds'])):
         valid_patients = cv_df.loc[cv_df.fold.isin(valid_fold), 'StudyInstanceUID'].unique()
         filt = df.StudyInstanceUID.isin(valid_patients)
@@ -127,7 +126,7 @@ def update_stage1_oof_preds(df, cv_df):
 
             val_loader = torch.utils.data.DataLoader(
                 valid_ds, 
-                batch_size=256,
+                batch_size=256, # change this to 1 since it is an entire study?
                 num_workers=CFG['num_workers'],
                 shuffle=False,
                 pin_memory=False,
@@ -142,18 +141,19 @@ def update_stage1_oof_preds(df, cv_df):
             image_preds_all = []
             correct_count = 0
             count = 0
-            for step, (imgs, target) in enumerate(val_loader):
-                imgs = imgs.to(device).float()
-                target = target.to(device).float()
+            for step, (img_list, target_list) in enumerate(val_loader):
+                for (imgs, target) in zip(img_list, target_list):
+                    imgs = imgs.to(device).float()
+                    target = target.to(device).float()
 
-                image_preds = model(imgs)   #output = model(input)
+                    image_preds = model(imgs)   #output = model(input)
 
-                if len(image_preds.shape) == 1:
-                    image_preds = image_preds.view(-1, 1)
+                    if len(image_preds.shape) == 1:
+                        image_preds = image_preds.view(-1, 1)
                 
-                correct_count += ((image_preds[:,0]>0) == target[:,0]).sum().detach().item()
-                count += imgs.shape[0]
-                image_preds_all += [image_preds.cpu().detach().numpy()]
+                    correct_count += ((image_preds[:,0]>0) == target[:,0]).sum().detach().item()
+                    count += imgs.shape[0]
+                    image_preds_all += [image_preds.cpu().detach().numpy()]
                 print('acc: {:.4f}, {}, {}, {}/{}'.format(correct_count/count, correct_count, count, step+1, len(val_loader)), end='\r')
             print()
             
@@ -261,6 +261,7 @@ if __name__ == '__main__':
 
     with torch.no_grad():
         train_df = update_stage1_oof_preds(train_df,cv_df)
+    train_df.to_csv('testing testing')
     # img must be sorted before feeding into NN for correct orders
 
     for fold, (train_fold, valid_fold) in enumerate(zip(CFG['train_folds'], CFG['valid_folds'])):

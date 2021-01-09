@@ -3,6 +3,8 @@ validation/
 Inference/
 Kaggle/
 inference/
+volumentations/
+input/
 
 venv/
 __pycache__/
