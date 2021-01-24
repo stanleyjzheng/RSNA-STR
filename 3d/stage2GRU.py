@@ -135,7 +135,7 @@ def update_stage1_oof_preds(df, cv_df):
 
             device = torch.device(CFG['device'])
             model = cfg['model_constructor']().to(device)
-            model.load_state_dict(torch.load('{}/model_fold_{}_{}'.format(CFG['model_path'], fold, cfg['tag'])))
+            model.load_state_dict(torch.load('{}/model_fold_{}_{}'.format(CFG['model_path'], fold, cfg['tag']), map_location=device))
             model.eval()
 
             image_preds_all = []
@@ -283,7 +283,7 @@ if __name__ == '__main__':
 
         torch.save(model.state_dict(),'{}/model_fold_{}_{}'.format(CFG['save_path'], fold, CFG['tag']))
         
-        model.load_state_dict(torch.load('{}/model_fold_{}_{}'.format(CFG['save_path'], fold, CFG['tag'])))
+        model.load_state_dict(torch.load('{}/model_fold_{}_{}'.format(CFG['save_path'], fold, CFG['tag']), map_location=device))
         
         # prediction for oof
         valid_patients = cv_df.loc[cv_df.fold.isin(valid_fold), 'StudyInstanceUID'].unique()

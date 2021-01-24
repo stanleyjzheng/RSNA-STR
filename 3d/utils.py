@@ -37,7 +37,7 @@ def window(img, WL=50, WW=350):
     X = X / np.max(X)
     return X
 
-def get_img(path, transforms, opencv=False):
+def get_img(paths, transforms, opencv=False):
     '''
     Retrive RGB image from dicom files
     RED channel / LUNG window / level=-600, width=1500
@@ -47,8 +47,8 @@ def get_img(path, transforms, opencv=False):
     path - str; image path
     transforms - albu.Compose; containing desired transformations
     '''
-    out = np.array([])
-    for i in paths:
+    out = []
+    for path in paths:
         d = pydicom.read_file(path)
         img = (d.pixel_array * d.RescaleSlope) + d.RescaleIntercept
         
@@ -140,12 +140,13 @@ class RSNADatasetStage1(Dataset):
         self.opencv = opencv
         self.image_label = image_label
         self.image_subsampling = image_subsampling
+        self.studies = self.df['StudyInstanceUID'].unique()
     
     def __len__(self):
         return self.df.shape[0]
     
     def __getitem__(self, index: int):
-        study = self.df['StudyInstanceUID'].unique()[index]
+        study = self.studies[index]
         study_df = self.df.loc[self.df['StudyInstanceUID']==study]
         # get labels
         if self.output_label:
@@ -156,12 +157,12 @@ class RSNADatasetStage1(Dataset):
                 target[1:-1] = target[0]*target[1:-1] # if PE == 1, keep the original label; otherwise clean to 0 (except indeterminate)
                 # we're going to have to fix the above line since there's an additional dimension
                 # but i haven't downloaded the dataset yet so we'll figure that out later
-        path_format = "{}/{}/{}/{}.dcm".format(self.data_root, 
-                                        self.df.iloc[index]['StudyInstanceUID'], 
-                                        self.df.iloc[index]['SeriesInstanceUID'], 
-                                        self.df.iloc[index]['SOPInstanceUID'])
-        paths = [path_format.format(self.data_root, study_df[index]['StudyInstanceUID'], study_df[index]['SeriesInstanceUID'], study_df[index]['SOPInstanceUID']) for i in range(study_df.shape[0])]
-
+        path_format = "{}/{}/{}/{}.dcm"#.format(self.data_root, 
+                                       # self.df.iloc[index]['StudyInstanceUID'], 
+                                       # self.df.iloc[index]['SeriesInstanceUID'], 
+                                       # self.df.iloc[index]['SOPInstanceUID'])
+        paths = [path_format.format(self.data_root, study_df.iloc[index]['StudyInstanceUID'], study_df.iloc[index]['SeriesInstanceUID'], study_df.iloc[index]['SOPInstanceUID']) for i in range(study_df.shape[0])]
+        # we should use globs for paths
         img = get_img(paths, self.transforms, self.opencv)
 
         if self.output_label == True:
