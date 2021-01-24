@@ -1,10 +1,10 @@
 {
     "train": true,
-    "train_img_path": "../input/rsna-str-pulmonary-embolism-detection/train",
-    "test_img_path": "../input/rsna-str-pulmonary-embolism-detection/test",
-    "cv_fold_path": "../input/rsna-str-github/rsna_train_splits_fold_20.csv",
-    "train_path": "../input/rsna-str-pulmonary-embolism-detection/train.csv",
-    "test_path": "../input/rsna-str-pulmonary-embolism-detection/test.csv",
+    "train_img_path": "/work/rsna_kaggle/RSNA/train",
+    "test_img_path": "/work/rsna_kaggle/RSNA/test",
+    "cv_fold_path": "/work/rsna_kaggle/RSNA/rsna_train_splits_fold_20.csv",
+    "train_path": "/work/rsna_kaggle/RSNA/train.csv",
+    "test_path": "/work/rsna_kaggle/RSNA/test.csv",
     "image_target_cols": [
         "pe_present_on_image",
         "rv_lv_ratio_gte_1",
