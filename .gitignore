@@ -5,6 +5,7 @@ Kaggle/
 inference/
 volumentations/
 input/
+input/*.zip
 
 venv/
 __pycache__/

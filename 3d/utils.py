@@ -13,7 +13,7 @@ import json
 import time
 
 with open('config.json') as json_file: 
-    CFG = json.load(json_file) 
+    CFG = json.load(json_file)
 
 def get_valid_transforms():
     return albu.Compose([
@@ -156,8 +156,7 @@ class RSNADatasetStage1(Dataset):
                 target[1:-1] = target[0]*target[1:-1] # if PE == 1, keep the original label; otherwise clean to 0 (except indeterminate)
                 # we're going to have to fix the above line since there's an additional dimension
                 # but i haven't downloaded the dataset yet so we'll figure that out later
-        path_format = "{}/{}/{}/{}.dcm"
-                                .format(self.data_root, 
+        path_format = "{}/{}/{}/{}.dcm".format(self.data_root, 
                                         self.df.iloc[index]['StudyInstanceUID'], 
                                         self.df.iloc[index]['SeriesInstanceUID'], 
                                         self.df.iloc[index]['SOPInstanceUID'])
