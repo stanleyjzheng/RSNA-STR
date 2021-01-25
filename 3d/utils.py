@@ -59,14 +59,14 @@ def get_img(paths, transforms, opencv=False):
         res = np.concatenate([r[:, :, np.newaxis],
                             g[:, :, np.newaxis],
                             b[:, :, np.newaxis]], axis=-1)
-        out.append(res) # yes this is very inefficient but the computer is fast.
     
-    if opencv:
-        res = transforms(image=(res*255.0).astype('uint8'))['image']
-        res = torch.div(res, 255.)
-    else:
-        res = transforms(image=res)['image']
-    return res
+        if opencv:
+            res = transforms(image=(res*255.0).astype('uint8'))['image']
+            res = torch.div(res, 255.)
+        else:
+            res = transforms(image=res)['image']
+        out.append(res) # yes this is very inefficient but the computer is fast.
+    return out
 
 def get_stage1_columns(STAGE1_CFGS):
     new_feats = []
