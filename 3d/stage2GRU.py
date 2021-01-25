@@ -155,7 +155,7 @@ def update_stage1_oof_preds(df, cv_df):
                     count += imgs.shape[0]
                     image_preds_all += [image_preds.cpu().detach().numpy()]
                 print('acc: {:.4f}, {}, {}, {}/{}'.format(correct_count/count, correct_count, count, step+1, len(val_loader)), end='\r')
-            print()
+            # print()
             
             image_preds_all = np.concatenate(image_preds_all, axis=0)
             image_preds_all_list += [image_preds_all]
